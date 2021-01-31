@@ -1,0 +1,3 @@
+-r requirements-min.txt
+
+git+https://github.com/benoitc/gunicorn.git#egg=gunicorn
