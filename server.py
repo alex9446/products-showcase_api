@@ -1,5 +1,7 @@
 from flask import Flask
 
+from parameters import get_parameter
+
 app = Flask(__name__)
 
 
@@ -9,4 +11,4 @@ def index() -> tuple:
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True, port=int(get_parameter('port')))
