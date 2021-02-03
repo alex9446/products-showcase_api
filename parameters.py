@@ -9,6 +9,11 @@ from os import environ as environment_variables
 # ]
 
 PARAMETERS = {
+    'admin_name': [
+        ['admin-name'],
+        ['ADMIN_NAME', 'ML_ADMIN_NAME'],
+        'admin'
+    ],
     'allowed_cors': [
         ['allowed-cors'],
         ['ALLOWED_CORS', 'ML_CORS'],
@@ -38,7 +43,7 @@ def get_args() -> dict:
     for argument in total_arguments:
         parser.add_argument(f'--{argument}')
 
-    return vars(parser.parse_args())
+    return vars(parser.parse_known_args()[0])
 
 
 # Retrieve the best parameter with this priority:
@@ -51,7 +56,7 @@ def get_parameter(name: str) -> str:
     default = parameter[2]
 
     for arg in args:
-        value = parsed_args[arg]
+        value = parsed_args[arg.replace('-', '_')]
         if value:
             return value
     for env in envs:
