@@ -1,8 +1,9 @@
 from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 
-from parameters import get_parameter
+from src.parameters import get_parameter
 from src.user import add_first_admin_user, get_User_class
+from src.utils import model_to_dict
 
 app = Flask(__name__)
 
@@ -27,7 +28,7 @@ add_first_admin_user(db, User, get_parameter('admin_name'))
 
 @app.route('/')
 def index() -> tuple:
-    return jsonify([user.to_dict() for user in User.query.all()])
+    return jsonify(model_to_dict(User))
 
 
 if __name__ == '__main__':
