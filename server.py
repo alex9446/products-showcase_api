@@ -1,11 +1,13 @@
-from flask import Flask, jsonify
+from flask import Flask
+from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 
 from src.parameters import get_parameter
-from src.user import add_first_admin_user, get_User_class
-from src.utils import model_to_dict
+from src.user import UserRest, add_first_admin_user, get_User_class
 
 app = Flask(__name__)
+
+api = Api(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = get_parameter('database_url')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Suppress logged warning
@@ -26,9 +28,7 @@ db.create_all()
 add_first_admin_user(db, User, get_parameter('admin_name'))
 
 
-@app.route('/')
-def index() -> tuple:
-    return jsonify(model_to_dict(User))
+api.add_resource(UserRest.add_User(db, User), '/users', '/users/<string:id>')
 
 
 if __name__ == '__main__':

@@ -1,6 +1,9 @@
 from datetime import datetime
 
-from .utils import db_add_and_commit, random_hex
+from flask_restful import Resource
+
+from .utils import (db_add_and_commit, db_delete_and_commit, model_to_dict,
+                    random_hex)
 
 
 # Create admin user if there are no users in the database
@@ -12,6 +15,8 @@ def add_first_admin_user(db, User, name: str) -> None:
         print(f'Admin password: {password}')
 
 
+# Define and return User class model
+# Function was needed, because db is required in inheritance
 def get_User_class(db, user_role: dict):
     class User(db.Model):
         id = db.Column(db.String, primary_key=True, default=random_hex)
@@ -32,3 +37,28 @@ def get_User_class(db, user_role: dict):
                 'role': self.role
             }
     return User
+
+
+# Return User rest resource
+class UserRest(Resource):
+    @classmethod
+    def add_User(cls, db, User):
+        cls.db = db
+        cls.User = User
+        return cls
+
+    def get_first_by_id(self, id: str):
+        return self.User.query.filter_by(id=id).first()
+
+    def delete(self, id: str = None):
+        user = self.get_first_by_id(id)
+        if user:
+            db_delete_and_commit(self.db, user)
+            return user.to_dict()
+        return {}, 404
+
+    def get(self, id: str = None):
+        if id:
+            user = self.get_first_by_id(id)
+            return user.to_dict() if user else {}, 404
+        return model_to_dict(self.User)
