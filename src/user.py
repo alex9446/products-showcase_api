@@ -3,7 +3,7 @@ from datetime import datetime
 from flask_restful import Resource
 
 from .utils import (db_add_and_commit, db_delete_and_commit, model_to_dict,
-                    random_hex)
+                    random_hex, status_error, status_ok)
 
 
 # Create admin user if there are no users in the database
@@ -50,15 +50,21 @@ class UserRest(Resource):
     def get_first_by_id(self, id: str):
         return self.User.query.filter_by(id=id).first()
 
-    def delete(self, id: str = None):
+    def delete(self, id: str = None) -> tuple:
         user = self.get_first_by_id(id)
         if user:
             db_delete_and_commit(self.db, user)
-            return user.to_dict()
-        return {}, 404
+            return status_ok(user=user.to_dict())
+        return self.status_user_404()
 
-    def get(self, id: str = None):
+    def get(self, id: str = None) -> tuple:
         if id:
             user = self.get_first_by_id(id)
-            return user.to_dict() if user else {}, 404
-        return model_to_dict(self.User)
+            if user:
+                return status_ok(user=user.to_dict())
+            return self.status_user_404()
+        return status_ok(users=model_to_dict(self.User))
+
+    @staticmethod
+    def status_user_404() -> tuple:
+        return status_error(error_code=404, message='User not found!')

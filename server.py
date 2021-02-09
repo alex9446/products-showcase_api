@@ -9,6 +9,7 @@ from src.utils import random_hex
 
 app = Flask(__name__)
 
+app.config['BUNDLE_ERRORS'] = True  # For bundle the errors of RequestParser
 api = Api(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = get_parameter('database_url')

@@ -21,3 +21,16 @@ def model_to_dict(model) -> list:
 # Generate a random hexadecimal value
 def random_hex(max_length: int = 6) -> str:
     return uuid4().hex[:max_length]
+
+
+def status_ok(**kwargs) -> tuple:
+    response = kwargs
+    response['status'] = 'ok'
+    return response, 200
+
+
+def status_error(error_code: int, message: str = '') -> tuple:
+    return {
+        'status': 'error',
+        'message': message
+    }, error_code

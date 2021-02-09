@@ -1,6 +1,8 @@
 from flask_restful import Resource, reqparse
 from jwt import encode as jwt_encoder
 
+from .utils import status_error, status_ok
+
 
 # Return Login rest resource
 class LoginRest(Resource):
@@ -10,7 +12,7 @@ class LoginRest(Resource):
         cls.jwt_secret = jwt_secret
         return cls
 
-    def post(self):
+    def post(self) -> tuple:
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str,
                             required=True, nullable=False)
@@ -22,5 +24,6 @@ class LoginRest(Resource):
         user = self.User.query.filter_by(name=name, password=password).first()
         if user:
             token = jwt_encoder(user.to_dict(), self.jwt_secret)
-            return {'token': token}
-        return {}, 401
+            return status_ok(token=token)
+        return status_error(error_code=401,
+                            message='Incorrect account credentials!')
