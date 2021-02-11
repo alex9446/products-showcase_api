@@ -1,5 +1,9 @@
 from uuid import uuid4
 
+from flask_restful import reqparse
+from jwt import decode as jwt_decoder
+from jwt import exceptions as jwt_exceptions
+
 
 # Combine database add & commit functions
 def db_add_and_commit(db, model) -> None:
@@ -11,6 +15,18 @@ def db_add_and_commit(db, model) -> None:
 def db_delete_and_commit(db, model) -> None:
     db.session.delete(model)
     db.session.commit()
+
+
+# Decode a JSON Web Token encapsulated in the Authorization: Bearer
+def decode_jwt(jwt_secret: str) -> dict:
+    parser = reqparse.RequestParser()
+    parser.add_argument('Authorization', type=str,
+                        required=True, nullable=False, location='headers')
+    only_token = parser.parse_args()['Authorization'].replace('Bearer ', '')
+    try:
+        return jwt_decoder(only_token, jwt_secret, algorithms=['HS256'])
+    except jwt_exceptions.InvalidTokenError:
+        return {}
 
 
 # Get model as a list of dictionaries
