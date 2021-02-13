@@ -32,8 +32,10 @@ add_first_admin_user(db, User, get_parameter('admin_name'))
 
 jwt_secret = random_hex(20)
 
-api.add_resource(LoginRest.add_User(User, jwt_secret), '/login')
-api.add_resource(UserRest.add_User(db, User), '/users', '/users/<string:id>')
+api.add_resource(LoginRest.add_User(User, jwt_secret),
+                 '/login')
+api.add_resource(UserRest.add_User(db, User, jwt_secret, USER_ROLE),
+                 '/users', '/users/<string:id>')
 
 
 if __name__ == '__main__':

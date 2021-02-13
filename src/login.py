@@ -9,7 +9,7 @@ from .utils import decode_jwt, status_error, status_ok
 # Return Login rest resource
 class LoginRest(Resource):
     @classmethod
-    def add_User(cls, User, jwt_secret):
+    def add_User(cls, User, jwt_secret: str):
         cls.User = User
         cls.jwt_secret = jwt_secret
         return cls
