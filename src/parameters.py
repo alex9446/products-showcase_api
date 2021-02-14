@@ -1,6 +1,8 @@
 from argparse import ArgumentParser
 from os import environ as environment_variables
 
+from .utils import random_hex
+
 # PARAMETERS SCHEME
 # 'parameter_name': [
 #     ['cli-argument', ...],
@@ -9,15 +11,15 @@ from os import environ as environment_variables
 # ]
 
 PARAMETERS = {
-    'admin_name': [
-        ['admin-name'],
-        ['ADMIN_NAME', 'ML_ADMIN_NAME'],
-        'admin'
-    ],
     'allowed_cors': [
         ['allowed-cors'],
         ['ALLOWED_CORS', 'ML_CORS'],
         ''
+    ],
+    'jwt_secret': [
+        ['jwt-secret'],
+        ['JWT_SECRET', 'ML_JWT_SECRET'],
+        random_hex(20)
     ],
     'database_url': [
         ['database-url'],

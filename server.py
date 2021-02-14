@@ -5,7 +5,6 @@ from flask_sqlalchemy import SQLAlchemy
 from src.login import LoginRest
 from src.parameters import get_parameter
 from src.user import UserRest, add_first_admin_user, get_User_class
-from src.utils import random_hex
 
 app = Flask(__name__)
 
@@ -28,9 +27,9 @@ User = get_User_class(db, USER_ROLE)
 
 # Commands for initialize the database
 db.create_all()
-add_first_admin_user(db, User, get_parameter('admin_name'))
+add_first_admin_user(db, User)
 
-jwt_secret = random_hex(20)
+jwt_secret = get_parameter('jwt_secret')
 
 api.add_resource(LoginRest.add_User(User, jwt_secret),
                  '/login')

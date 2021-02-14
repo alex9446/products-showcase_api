@@ -45,8 +45,8 @@ def status_ok(**kwargs) -> tuple:
     return response, 200
 
 
-def status_error(error_code: int, message: str = '') -> tuple:
-    return {
-        'status': 'error',
-        'message': message
-    }, error_code
+def status_error(error_code: int, message: str = '', **kwargs) -> tuple:
+    response = kwargs
+    response['message'] = message
+    response['status'] = 'error'
+    return response, error_code

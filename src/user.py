@@ -1,18 +1,17 @@
 from datetime import datetime
 
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
 
 from .utils import (db_add_and_commit, db_delete_and_commit, decode_jwt,
                     model_to_dict, random_hex, status_error, status_ok)
 
 
 # Create admin user if there are no users in the database
-def add_first_admin_user(db, User, name: str) -> None:
+def add_first_admin_user(db, User) -> None:
     if User.query.first() is None:
-        password = random_hex(10)
-        user = User(name=name, password=password, role='admin')
+        user = User(name='admin', password=random_hex(10), role='admin')
         db_add_and_commit(db, user)
-        print(f'Admin password: {password}')
+        print(f'Admin name: {user.name}\nAdmin pass: {user.password}')
 
 
 # Define and return User class model
@@ -61,6 +60,9 @@ class UserRest(Resource):
     def get_first_by_id(self, id: str):
         return self.User.query.filter_by(id=id).first()
 
+    def get_first_by_name(self, name: str):
+        return self.User.query.filter_by(name=name).first()
+
     def delete(self, id: str = None) -> tuple:
         if not self.check_allowed_role('admin'):
             return self.status_user_401()
@@ -80,6 +82,59 @@ class UserRest(Resource):
             return self.status_user_404()
         return status_ok(users=model_to_dict(self.User))
 
+    def post(self, id: str = None) -> tuple:
+        if not self.check_allowed_role('admin'):
+            return self.status_user_401()
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, required=True, nullable=False)
+        parser.add_argument('password', type=str, nullable=False,
+                            default=random_hex(10))
+        parser.add_argument('first_name', type=str, default=None)
+        parser.add_argument('last_name', type=str, default=None)
+        parser.add_argument('role', type=str, nullable=False,
+                            default=list(self.user_role.keys())[0])
+        parsed_values = parser.parse_args()
+
+        if parsed_values['role'] not in self.user_role:
+            return self.status_user_400_role()
+        if self.get_first_by_name(parsed_values['name']):
+            return self.status_user_409()
+        user = self.User(**parsed_values)
+        db_add_and_commit(self.db, user)
+        return status_ok(user=user.to_dict())
+
+    def put(self, id: str = None) -> tuple:
+        if not self.check_allowed_role('admin'):
+            return self.status_user_401()
+        user = self.get_first_by_id(id)
+        if user is None:
+            return self.status_user_404()
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, nullable=False,
+                            default=user.name)
+        parser.add_argument('password', type=str, nullable=False,
+                            default=user.password)
+        parser.add_argument('first_name', type=str, default=user.first_name)
+        parser.add_argument('last_name', type=str, default=user.last_name)
+        parser.add_argument('role', type=str, nullable=False,
+                            default=user.role)
+        parsed_values = parser.parse_args()
+
+        if parsed_values['role'] not in self.user_role:
+            return self.status_user_400_role()
+        if (user.name != parsed_values['name']
+           and self.get_first_by_name(parsed_values['name'])):
+            return self.status_user_409()
+        self.User.query.filter_by(id=id).update(parsed_values)
+        self.db.session.commit()
+        return status_ok(user=user.to_dict())
+
+    def status_user_400_role(self) -> tuple:
+        return status_error(error_code=400, message='Non-existent role!',
+                            possible_roles=list(self.user_role.keys()))
+
     @staticmethod
     def status_user_401() -> tuple:
         return status_error(error_code=401,
@@ -88,3 +143,7 @@ class UserRest(Resource):
     @staticmethod
     def status_user_404() -> tuple:
         return status_error(error_code=404, message='User not found!')
+
+    @staticmethod
+    def status_user_409() -> tuple:
+        return status_error(error_code=409, message='Name already taken!')
