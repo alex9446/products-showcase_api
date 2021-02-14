@@ -48,6 +48,12 @@ class UserRest(Resource):
         cls.user_role = user_role
         return cls
 
+    def check_allowed_id(self, id: str) -> bool:
+        jwt_payload = decode_jwt(self.jwt_secret)
+        if ('id' in jwt_payload) and (jwt_payload['id'] == id):
+            return True
+        return False
+
     def check_allowed_role(self, allowed_role: str) -> bool:
         jwt_payload = decode_jwt(self.jwt_secret)
         if 'role' in jwt_payload:
@@ -64,7 +70,7 @@ class UserRest(Resource):
         return self.User.query.filter_by(name=name).first()
 
     def delete(self, id: str = None) -> tuple:
-        if not self.check_allowed_role('admin'):
+        if not (self.check_allowed_role('admin') or self.check_allowed_id(id)):
             return self.status_user_401()
         user = self.get_first_by_id(id)
         if user:
@@ -73,14 +79,17 @@ class UserRest(Resource):
         return self.status_user_404()
 
     def get(self, id: str = None) -> tuple:
-        if not self.check_allowed_role('admin'):
+        admin_role = self.check_allowed_role('admin')
+        if not (admin_role or self.check_allowed_id(id)):
             return self.status_user_401()
         if id:
             user = self.get_first_by_id(id)
             if user:
                 return status_ok(user=user.to_dict())
             return self.status_user_404()
-        return status_ok(users=model_to_dict(self.User))
+        if admin_role:
+            return status_ok(users=model_to_dict(self.User))
+        return self.status_user_401()
 
     def post(self, id: str = None) -> tuple:
         if not self.check_allowed_role('admin'):
@@ -105,7 +114,8 @@ class UserRest(Resource):
         return status_ok(user=user.to_dict())
 
     def put(self, id: str = None) -> tuple:
-        if not self.check_allowed_role('admin'):
+        admin_role = self.check_allowed_role('admin')
+        if not (admin_role or self.check_allowed_id(id)):
             return self.status_user_401()
         user = self.get_first_by_id(id)
         if user is None:
@@ -118,11 +128,12 @@ class UserRest(Resource):
                             default=user.password)
         parser.add_argument('first_name', type=str, default=user.first_name)
         parser.add_argument('last_name', type=str, default=user.last_name)
-        parser.add_argument('role', type=str, nullable=False,
-                            default=user.role)
+        if admin_role:
+            parser.add_argument('role', type=str, nullable=False,
+                                default=user.role)
         parsed_values = parser.parse_args()
 
-        if parsed_values['role'] not in self.user_role:
+        if admin_role and (parsed_values['role'] not in self.user_role):
             return self.status_user_400_role()
         if (user.name != parsed_values['name']
            and self.get_first_by_name(parsed_values['name'])):
