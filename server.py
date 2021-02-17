@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 from src.login import LoginRest
 from src.parameters import get_parameter
-from src.product import get_Product_class
+from src.product import ProductRest, get_Product_class
 from src.user import UserRest, add_first_admin_user, get_User_class
 
 app = Flask(__name__)
@@ -37,6 +37,8 @@ api.add_resource(LoginRest.add_User(User, jwt_secret),
                  '/login')
 api.add_resource(UserRest.add_User(db, User, jwt_secret, USER_ROLE),
                  '/users', '/users/<string:id>')
+api.add_resource(ProductRest.add_Product(db, Product),
+                 '/products', '/products/<string:id>')
 
 
 if __name__ == '__main__':
