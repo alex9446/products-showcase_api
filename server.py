@@ -29,7 +29,7 @@ Product = get_Product_class(db)
 
 # Commands for initialize the database
 db.create_all()
-add_first_admin_user(db, User)
+add_first_admin_user(db, User, get_parameter('first_admin_password'))
 
 jwt_secret = get_parameter('jwt_secret')
 

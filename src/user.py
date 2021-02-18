@@ -7,9 +7,9 @@ from .utils import (db_add_and_commit, db_delete_and_commit, decode_jwt,
 
 
 # Create admin user if there are no users in the database
-def add_first_admin_user(db, User) -> None:
+def add_first_admin_user(db, User, password: str) -> None:
     if User.query.first() is None:
-        user = User(name='admin', password=random_hex(10), role='admin')
+        user = User(name='admin', password=password, role='admin')
         db_add_and_commit(db, user)
         print(f'Admin name: {user.name}\nAdmin pass: {user.password}')
 

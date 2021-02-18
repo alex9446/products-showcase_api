@@ -16,6 +16,11 @@ PARAMETERS = {
         ['ALLOWED_CORS', 'ML_CORS'],
         ''
     ],
+    'first_admin_password': [
+        ['first-admin-password'],
+        ['FIRST_ADMIN_PASSWORD', 'ML_FAP'],
+        random_hex(10)
+    ],
     'jwt_secret': [
         ['jwt-secret'],
         ['JWT_SECRET', 'ML_JWT_SECRET'],
