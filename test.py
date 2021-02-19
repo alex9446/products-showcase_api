@@ -10,14 +10,19 @@ def local_server() -> str:
 
 
 class Test(unittest.TestCase):
-    def test_login(self):
-        response = requests.post(
+    @staticmethod
+    def login() -> dict:
+        return requests.post(
             url=local_server() + '/login',
             json={
                 'name': 'admin',
                 'password': get_parameter('first_admin_password')
             }
         )
+
+    def test_login(self):
+        response = self.login()
+        self.assertEqual(response.status_code, 200)
         response_dict = response.json()
         self.assertEqual(response_dict['status'], 'ok')
         self.assertIsInstance(response_dict['token'], str)
