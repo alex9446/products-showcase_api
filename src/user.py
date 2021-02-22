@@ -2,8 +2,9 @@ from datetime import datetime
 
 from flask_restful import Resource, reqparse
 
-from .utils import (db_add_and_commit, db_delete_and_commit, decode_jwt,
-                    model_to_dict, random_hex, status_error, status_ok)
+from .utils import (check_allowed_role, db_add_and_commit,
+                    db_delete_and_commit, decode_jwt, model_to_dict,
+                    random_hex, status_error, status_ok, status_user_401)
 
 
 # Create admin user if there are no users in the database
@@ -55,13 +56,9 @@ class UserRest(Resource):
         return False
 
     def check_allowed_role(self, allowed_role: str) -> bool:
-        jwt_payload = decode_jwt(self.jwt_secret)
-        if 'role' in jwt_payload:
-            role_level = self.user_role[jwt_payload['role']]
-            allowed_role_level = self.user_role[allowed_role]
-            if role_level >= allowed_role_level:
-                return True
-        return False
+        return check_allowed_role(allowed_role=allowed_role,
+                                  jwt_secret=self.jwt_secret,
+                                  user_role=self.user_role)
 
     def get_first_by_id(self, id: str):
         return self.User.query.filter_by(id=id).first()
@@ -71,7 +68,7 @@ class UserRest(Resource):
 
     def delete(self, id: str = None) -> tuple:
         if not (self.check_allowed_role('admin') or self.check_allowed_id(id)):
-            return self.status_user_401()
+            return status_user_401()
         user = self.get_first_by_id(id)
         if user:
             db_delete_and_commit(self.db, user)
@@ -81,7 +78,7 @@ class UserRest(Resource):
     def get(self, id: str = None) -> tuple:
         admin_role = self.check_allowed_role('admin')
         if not (admin_role or self.check_allowed_id(id)):
-            return self.status_user_401()
+            return status_user_401()
         if id:
             user = self.get_first_by_id(id)
             if user:
@@ -89,11 +86,11 @@ class UserRest(Resource):
             return self.status_user_404()
         if admin_role:
             return status_ok(users=model_to_dict(self.User))
-        return self.status_user_401()
+        return status_user_401()
 
     def post(self, id: str = None) -> tuple:
         if not self.check_allowed_role('admin'):
-            return self.status_user_401()
+            return status_user_401()
 
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, required=True, nullable=False)
@@ -116,7 +113,7 @@ class UserRest(Resource):
     def put(self, id: str = None) -> tuple:
         admin_role = self.check_allowed_role('admin')
         if not (admin_role or self.check_allowed_id(id)):
-            return self.status_user_401()
+            return status_user_401()
         user = self.get_first_by_id(id)
         if user is None:
             return self.status_user_404()
@@ -145,11 +142,6 @@ class UserRest(Resource):
     def status_user_400_role(self) -> tuple:
         return status_error(error_code=400, message='Non-existent role!',
                             possible_roles=list(self.user_role.keys()))
-
-    @staticmethod
-    def status_user_401() -> tuple:
-        return status_error(error_code=401,
-                            message='Access denied for your role!')
 
     @staticmethod
     def status_user_404() -> tuple:

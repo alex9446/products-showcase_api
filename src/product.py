@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
 
-from .utils import model_to_dict, random_hex, status_error, status_ok
+from .utils import (check_allowed_role, db_add_and_commit, model_to_dict,
+                    random_hex, status_error, status_ok, status_user_401)
 
 
 # Define and return Product class model
@@ -32,10 +33,17 @@ def get_Product_class(db):
 # Return Product rest resource
 class ProductRest(Resource):
     @classmethod
-    def add_Product(cls, db, Product):
+    def add_Product(cls, db, Product, jwt_secret: str, user_role: dict):
         cls.db = db
         cls.Product = Product
+        cls.jwt_secret = jwt_secret
+        cls.user_role = user_role
         return cls
+
+    def check_allowed_role(self, allowed_role: str) -> bool:
+        return check_allowed_role(allowed_role=allowed_role,
+                                  jwt_secret=self.jwt_secret,
+                                  user_role=self.user_role)
 
     def get_first_by_id(self, id: str):
         return self.Product.query.filter_by(id=id).first()
@@ -47,6 +55,23 @@ class ProductRest(Resource):
                 return status_ok(product=product.to_dict())
             return self.status_product_404()
         return status_ok(products=model_to_dict(self.Product))
+
+    def post(self, id: str = None) -> tuple:
+        if not self.check_allowed_role('manager'):
+            status_user_401()
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, required=True, nullable=False)
+        parser.add_argument('sku', type=str, required=True, nullable=False)
+        parser.add_argument('description', type=str,
+                            nullable=False, default='')
+        parser.add_argument('price', type=float, default=None)
+        parser.add_argument('discount_percent', type=float, default=None)
+        parsed_values = parser.parse_args()
+
+        product = self.Product(**parsed_values)
+        db_add_and_commit(self.db, product)
+        return status_ok(product=product.to_dict())
 
     @staticmethod
     def status_product_404() -> tuple:

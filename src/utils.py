@@ -5,6 +5,19 @@ from jwt import decode as jwt_decoder
 from jwt import exceptions as jwt_exceptions
 
 
+# Check if the user role is enough
+def check_allowed_role(allowed_role: str,
+                       jwt_secret: str,
+                       user_role: dict) -> bool:
+    jwt_payload = decode_jwt(jwt_secret)
+    if 'role' in jwt_payload:
+        role_level = user_role[jwt_payload['role']]
+        allowed_role_level = user_role[allowed_role]
+        if role_level >= allowed_role_level:
+            return True
+    return False
+
+
 # Combine database add & commit functions
 def db_add_and_commit(db, model) -> None:
     db.session.add(model)
@@ -50,3 +63,7 @@ def status_error(error_code: int, message: str = '', **kwargs) -> tuple:
     response['message'] = message
     response['status'] = 'error'
     return response, error_code
+
+
+def status_user_401() -> tuple:
+    return status_error(error_code=401, message='Access denied for your role!')

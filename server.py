@@ -37,7 +37,7 @@ api.add_resource(LoginRest.add_User(User, jwt_secret),
                  '/login')
 api.add_resource(UserRest.add_User(db, User, jwt_secret, USER_ROLE),
                  '/users', '/users/<string:id>')
-api.add_resource(ProductRest.add_Product(db, Product),
+api.add_resource(ProductRest.add_Product(db, Product, jwt_secret, USER_ROLE),
                  '/products', '/products/<string:id>')
 
 
