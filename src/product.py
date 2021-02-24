@@ -58,7 +58,7 @@ class ProductRest(Resource):
 
     def post(self, id: str = None) -> tuple:
         if not self.check_allowed_role('manager'):
-            status_user_401()
+            return status_user_401()
 
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, required=True, nullable=False)
@@ -71,6 +71,29 @@ class ProductRest(Resource):
 
         product = self.Product(**parsed_values)
         db_add_and_commit(self.db, product)
+        return status_ok(product=product.to_dict())
+
+    def put(self, id: str = None) -> tuple:
+        if not self.check_allowed_role('manager'):
+            return status_user_401()
+        product = self.get_first_by_id(id)
+        if product is None:
+            return self.status_product_404()
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, nullable=False,
+                            default=product.name)
+        parser.add_argument('sku', type=str, nullable=False,
+                            default=product.sku)
+        parser.add_argument('description', type=str, nullable=False,
+                            default=product.description)
+        parser.add_argument('price', type=float, default=product.price)
+        parser.add_argument('discount_percent', type=float,
+                            default=product.discount_percent)
+        parsed_values = parser.parse_args()
+
+        self.Product.query.filter_by(id=id).update(parsed_values)
+        self.db.session.commit()
         return status_ok(product=product.to_dict())
 
     @staticmethod
