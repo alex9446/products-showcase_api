@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from flask_restful import Resource, reqparse
 from jwt import encode as jwt_encoder
 
-from .utils import decode_jwt, status_error, status_ok
+from .utils import decode_jwt, hash_string, status_error, status_ok
 
 
 # Return Login rest resource
@@ -28,7 +28,8 @@ class LoginRest(Resource):
                             required=True, nullable=False)
         parsed_values = parser.parse_args()
 
-        name, password = (parsed_values['name'], parsed_values['password'])
+        name, password = (parsed_values['name'],
+                          hash_string(parsed_values['password']))
         user = self.User.query.filter_by(name=name, password=password).first()
         if user:
             jwt_payload = user.to_dict()

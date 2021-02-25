@@ -1,3 +1,4 @@
+from hashlib import sha256
 from uuid import uuid4
 
 from flask_restful import reqparse
@@ -40,6 +41,10 @@ def decode_jwt(jwt_secret: str) -> dict:
         return jwt_decoder(only_token, jwt_secret, algorithms=['HS256'])
     except jwt_exceptions.InvalidTokenError:
         return {}
+
+
+def hash_string(string: str) -> str:
+    return sha256(string.encode('utf-8')).hexdigest()
 
 
 # Get model as a list of dictionaries

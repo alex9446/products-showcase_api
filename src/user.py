@@ -3,8 +3,9 @@ from datetime import datetime
 from flask_restful import Resource, reqparse
 
 from .utils import (check_allowed_role, db_add_and_commit,
-                    db_delete_and_commit, decode_jwt, model_to_dict,
-                    random_hex, status_error, status_ok, status_user_401)
+                    db_delete_and_commit, decode_jwt, hash_string,
+                    model_to_dict, random_hex, status_error, status_ok,
+                    status_user_401)
 
 
 # Create admin user if there are no users in the database
@@ -106,6 +107,9 @@ class UserRest(Resource):
             return self.status_user_400_role()
         if self.get_first_by_name(parsed_values['name']):
             return self.status_user_409()
+        if 'password' in parsed_values:
+            parsed_values['password'] = hash_string(parsed_values['password'])
+
         user = self.User(**parsed_values)
         db_add_and_commit(self.db, user)
         return status_ok(user=user.to_dict())
@@ -135,6 +139,9 @@ class UserRest(Resource):
         if (user.name != parsed_values['name']
            and self.get_first_by_name(parsed_values['name'])):
             return self.status_user_409()
+        if 'password' in parsed_values:
+            parsed_values['password'] = hash_string(parsed_values['password'])
+
         self.User.query.filter_by(id=id).update(parsed_values)
         self.db.session.commit()
         return status_ok(user=user.to_dict())
