@@ -12,7 +12,7 @@ def get_Product_class(db):
     class Product(db.Model):
         id = db.Column(db.String, primary_key=True, default=random_hex)
         name = db.Column(db.String, nullable=False)
-        sku = db.Column(db.String, nullable=False)
+        sku = db.Column(db.String, nullable=False, unique=True)
         description = db.Column(db.String, nullable=False, default='')
         price = db.Column(db.Float, nullable=True)
         discount_percent = db.Column(db.Float, nullable=True)
@@ -48,6 +48,9 @@ class ProductRest(Resource):
     def get_first_by_id(self, id: str):
         return self.Product.query.filter_by(id=id).first()
 
+    def get_first_by_sku(self, sku: str):
+        return self.Product.query.filter_by(sku=sku).first()
+
     def get(self, id: str = None) -> tuple:
         if id:
             product = self.get_first_by_id(id)
@@ -69,6 +72,8 @@ class ProductRest(Resource):
         parser.add_argument('discount_percent', type=float, default=None)
         parsed_values = parser.parse_args()
 
+        if self.get_first_by_sku(parsed_values['sku']):
+            return self.status_product_409()
         product = self.Product(**parsed_values)
         db_add_and_commit(self.db, product)
         return status_ok(product=product.to_dict())
@@ -92,6 +97,9 @@ class ProductRest(Resource):
                             default=product.discount_percent)
         parsed_values = parser.parse_args()
 
+        if (product.sku != parsed_values['sku']
+           and self.get_first_by_sku(parsed_values['sku'])):
+            return self.status_product_409()
         self.Product.query.filter_by(id=id).update(parsed_values)
         self.db.session.commit()
         return status_ok(product=product.to_dict())
@@ -99,3 +107,7 @@ class ProductRest(Resource):
     @staticmethod
     def status_product_404() -> tuple:
         return status_error(error_code=404, message='Product not found!')
+
+    @staticmethod
+    def status_product_409() -> tuple:
+        return status_error(error_code=409, message='SKU already taken!')
