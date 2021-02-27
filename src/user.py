@@ -11,9 +11,11 @@ from .utils import (check_allowed_role, db_add_and_commit,
 # Create admin user if there are no users in the database
 def add_first_admin_user(db, User, password: str) -> None:
     if User.query.first() is None:
-        user = User(name='admin', password=password, role='admin')
+        user = User(name='admin',
+                    password=hash_string(password),
+                    role='admin')
         db_add_and_commit(db, user)
-        print(f'Admin name: {user.name}\nAdmin pass: {user.password}')
+        print(f'Admin name: {user.name}\nAdmin pass: {password}')
 
 
 # Define and return User class model
