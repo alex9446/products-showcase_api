@@ -28,6 +28,18 @@ class Test(unittest.TestCase):
         self.assertIsInstance(response_dict['token'], str)
         self.assertTrue(response_dict['token'])
 
+    def test_login_info(self):
+        token = self.login().json()['token']
+        response = requests.get(
+            url=local_server() + '/login',
+            headers={'Authorization': 'Bearer ' + token}
+        )
+        self.assertEqual(response.status_code, 200)
+        response_dict = response.json()
+        self.assertEqual(response_dict['status'], 'ok')
+        self.assertIsInstance(response_dict['jwt_payload'], dict)
+        self.assertEqual(response_dict['jwt_payload']['name'], 'admin')
+
 
 if __name__ == '__main__':
     unittest.main()
