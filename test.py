@@ -10,12 +10,12 @@ app.config['TESTING'] = True
 
 class Test(unittest.TestCase):
     @staticmethod
-    def set_login() -> dict:
+    def set_login(name: str = 'admin') -> dict:
         with app.test_client() as client:
             response = client.post(
                 '/login',
                 json={
-                    'name': 'admin',
+                    'name': name,
                     'password': get_parameter('first_admin_password')
                 }
             )
@@ -45,6 +45,14 @@ class Test(unittest.TestCase):
         self.assertEqual(response_dict['status'], 'ok')
         self.assertIsInstance(response_dict['token'], str)
         self.assertTrue(len(response_dict['token']) > 0)
+
+    def test_login_with_wrong_credentials(self):
+        response = self.set_login('test')
+        self.assertEqual(response.status_code, 401)
+        response_dict = response.get_json()
+        self.assertEqual(response_dict['status'], 'error')
+        self.assertEqual(response_dict['message'],
+                         'Incorrect account credentials!')
 
     def test_login_info(self):
         response = self.get_login(self.set_login().get_json()['token'])

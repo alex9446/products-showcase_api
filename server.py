@@ -41,5 +41,5 @@ api.add_resource(ProductRest.add_Product(db, Product, jwt_secret, USER_ROLE),
                  '/products', '/products/<string:id>')
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     app.run(debug=True, port=int(get_parameter('port')))
