@@ -71,6 +71,18 @@ class Test(unittest.TestCase):
         self.assertEqual(response_dict['message'],
                          'Incorrect account credentials!')
 
+    def test_add_user(self):
+        token = self.set_login().get_json()['token']
+        headers = {'Authorization': 'Bearer ' + token}
+        with app.test_client() as client:
+            response = client.post('/users', headers=headers,
+                                   json={'name': 'test'})
+        self.assertEqual(response.status_code, 200)
+        response_dict = response.get_json()
+        self.assertEqual(response_dict['status'], 'ok')
+        self.assertIsInstance(response_dict['user'], dict)
+        self.assertEqual(response_dict['user']['name'], 'test')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,0 +1,10 @@
+image: python:3
+
+before_script:
+  - python -V
+  - python -m pip install -r requirements-min.txt
+  - python -m pip install flake8 coverage
+
+test_python3:
+  script:
+    - sh ./run_test.sh
