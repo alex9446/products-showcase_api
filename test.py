@@ -38,50 +38,62 @@ class Test(unittest.TestCase):
         t2 = b64encode(dumps(payload_dict).encode('utf-8')).decode('utf-8')
         return f'{t1}.{t2}.{t3}'
 
+    @staticmethod
+    def add_user(token: str, json: dict):
+        headers = {'Authorization': 'Bearer ' + token}
+        with app.test_client() as client:
+            response = client.post('/users', headers=headers, json=json)
+        return response
+
+    def check_response(self, response,
+                       status_code: int = 200, status: str = 'ok'):
+        self.assertEqual(response.status_code, status_code)
+        self.assertEqual(response.get_json()['status'], status)
+
+    def check_incorrect_ac(self, response):
+        self.check_response(response, status_code=401, status='error')
+        self.assertEqual(response.get_json()['message'],
+                         'Incorrect account credentials!')
+
+    def check_access_denied(self, response):
+        self.check_response(response, status_code=401, status='error')
+        self.assertEqual(response.get_json()['message'],
+                         'Access denied for your role!')
+
     def test_login(self):
         response = self.set_login()
-        self.assertEqual(response.status_code, 200)
-        response_dict = response.get_json()
-        self.assertEqual(response_dict['status'], 'ok')
-        self.assertIsInstance(response_dict['token'], str)
-        self.assertTrue(len(response_dict['token']) > 0)
+        self.check_response(response)
+        token = response.get_json()['token']
+        self.assertIsInstance(token, str)
+        self.assertTrue(len(token) > 0)
 
     def test_login_with_wrong_credentials(self):
-        response = self.set_login('test')
-        self.assertEqual(response.status_code, 401)
-        response_dict = response.get_json()
-        self.assertEqual(response_dict['status'], 'error')
-        self.assertEqual(response_dict['message'],
-                         'Incorrect account credentials!')
+        self.check_incorrect_ac(self.set_login('test'))
 
     def test_login_info(self):
         response = self.get_login(self.set_login().get_json()['token'])
-        self.assertEqual(response.status_code, 200)
-        response_dict = response.get_json()
-        self.assertEqual(response_dict['status'], 'ok')
-        self.assertIsInstance(response_dict['jwt_payload'], dict)
-        self.assertEqual(response_dict['jwt_payload']['name'], 'admin')
+        self.check_response(response)
+        jwt_payload = response.get_json()['jwt_payload']
+        self.assertIsInstance(jwt_payload, dict)
+        self.assertEqual(jwt_payload['name'], 'admin')
 
     def test_altered_token(self):
         token = self.alterate_token(self.set_login().get_json()['token'])
-        response = self.get_login(token)
-        self.assertEqual(response.status_code, 401)
-        response_dict = response.get_json()
-        self.assertEqual(response_dict['status'], 'error')
-        self.assertEqual(response_dict['message'],
-                         'Incorrect account credentials!')
+        self.check_incorrect_ac(self.get_login(token))
 
     def test_add_user(self):
         token = self.set_login().get_json()['token']
-        headers = {'Authorization': 'Bearer ' + token}
-        with app.test_client() as client:
-            response = client.post('/users', headers=headers,
-                                   json={'name': 'test'})
-        self.assertEqual(response.status_code, 200)
-        response_dict = response.get_json()
-        self.assertEqual(response_dict['status'], 'ok')
-        self.assertIsInstance(response_dict['user'], dict)
-        self.assertEqual(response_dict['user']['name'], 'test')
+        password = get_parameter('first_admin_password')
+        response = self.add_user(token, {'name': 'new', 'password': password})
+        self.check_response(response)
+        user = response.get_json()['user']
+        self.assertIsInstance(user, dict)
+        self.assertEqual(user['name'], 'new')
+
+    def test_add_user_with_lower_role(self):
+        token = self.set_login(name='new').get_json()['token']
+        response = self.add_user(token, {'name': 'test', 'password': 'test'})
+        self.check_access_denied(response)
 
 
 if __name__ == '__main__':
