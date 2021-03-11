@@ -45,55 +45,51 @@ class Test(unittest.TestCase):
             response = client.post('/users', headers=headers, json=json)
         return response
 
-    def check_response(self, response,
-                       status_code: int = 200, status: str = 'ok'):
+    def check_response(self, response, status_code: int, status: str):
         self.assertEqual(response.status_code, status_code)
         self.assertEqual(response.get_json()['status'], status)
 
-    def check_incorrect_ac(self, response):
-        self.check_response(response, status_code=401, status='error')
-        self.assertEqual(response.get_json()['message'],
-                         'Incorrect account credentials!')
+    def check_response_ok(self, response):
+        self.check_response(response, status_code=200, status='ok')
 
-    def check_access_denied(self, response):
-        self.check_response(response, status_code=401, status='error')
-        self.assertEqual(response.get_json()['message'],
-                         'Access denied for your role!')
+    def check_response_error(self, response, status_code: int):
+        self.check_response(response, status_code=status_code, status='error')
 
+    # True TESTS
     def test_login(self):
-        response = self.set_login()
-        self.check_response(response)
-        token = response.get_json()['token']
-        self.assertIsInstance(token, str)
-        self.assertTrue(len(token) > 0)
+        self.check_response_ok(self.set_login())
 
     def test_login_with_wrong_credentials(self):
-        self.check_incorrect_ac(self.set_login('test'))
+        self.check_response_error(self.set_login('test'), status_code=401)
 
     def test_login_info(self):
         response = self.get_login(self.set_login().get_json()['token'])
-        self.check_response(response)
-        jwt_payload = response.get_json()['jwt_payload']
-        self.assertIsInstance(jwt_payload, dict)
-        self.assertEqual(jwt_payload['name'], 'admin')
+        self.check_response_ok(response)
 
     def test_altered_token(self):
         token = self.alterate_token(self.set_login().get_json()['token'])
-        self.check_incorrect_ac(self.get_login(token))
+        self.check_response_error(self.get_login(token), status_code=401)
 
     def test_add_user(self):
         token = self.set_login().get_json()['token']
         password = get_parameter('first_admin_password')
         response = self.add_user(token, {'name': 'new', 'password': password})
-        self.check_response(response)
-        user = response.get_json()['user']
-        self.assertIsInstance(user, dict)
-        self.assertEqual(user['name'], 'new')
+        self.check_response_ok(response)
 
     def test_add_user_with_lower_role(self):
         token = self.set_login(name='new').get_json()['token']
         response = self.add_user(token, {'name': 'test', 'password': 'test'})
-        self.check_access_denied(response)
+        self.check_response_error(response, status_code=401)
+
+    def test_add_user_has_nonexistent_role(self):
+        token = self.set_login().get_json()['token']
+        response = self.add_user(token, {'name': 'test', 'role': 'test'})
+        self.check_response_error(response, status_code=400)
+
+    def test_add_user_already_existent(self):
+        token = self.set_login().get_json()['token']
+        response = self.add_user(token, {'name': 'admin'})
+        self.check_response_error(response, status_code=409)
 
 
 if __name__ == '__main__':
