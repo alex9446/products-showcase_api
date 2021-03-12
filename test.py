@@ -31,11 +31,18 @@ class Test(unittest.TestCase):
         return response
 
     @staticmethod
-    def alterate_token(token: str) -> str:
+    def payload_encode(json: dict) -> str:
+        return b64encode(dumps(json).encode('utf-8')).decode('utf-8')
+
+    @staticmethod
+    def payload_decode(json: str) -> dict:
+        return loads(b64decode(json + '===').decode('utf-8'))
+
+    def alterate_token(self, token: str) -> str:
         t1, t2, t3 = token.split('.')
-        payload_dict = loads(b64decode(t2 + '===').decode('utf-8'))
+        payload_dict = self.payload_decode(t2)
         payload_dict['level'] = 'manager'
-        t2 = b64encode(dumps(payload_dict).encode('utf-8')).decode('utf-8')
+        t2 = self.payload_encode(payload_dict)
         return f'{t1}.{t2}.{t3}'
 
     @staticmethod
@@ -43,6 +50,14 @@ class Test(unittest.TestCase):
         headers = {'Authorization': 'Bearer ' + token}
         with app.test_client() as client:
             response = client.post('/users', headers=headers, json=json)
+        return response
+
+    @staticmethod
+    def edit_user(token: str, user_id: str, json: dict):
+        headers = {'Authorization': 'Bearer ' + token}
+        with app.test_client() as client:
+            response = client.put('/users/' + user_id,
+                                  headers=headers, json=json)
         return response
 
     def check_response(self, response, status_code: int, status: str):
@@ -90,6 +105,12 @@ class Test(unittest.TestCase):
         token = self.set_login().get_json()['token']
         response = self.add_user(token, {'name': 'admin'})
         self.check_response_error(response, status_code=409)
+
+    def test_edit_user(self):
+        token = self.set_login().get_json()['token']
+        user_id = self.payload_decode(token.split('.')[1])['id']
+        response = self.edit_user(token, user_id, {'first_name': 'Test'})
+        self.check_response_ok(response)
 
 
 if __name__ == '__main__':

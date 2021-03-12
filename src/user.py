@@ -127,8 +127,7 @@ class UserRest(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, nullable=False,
                             default=user.name)
-        parser.add_argument('password', type=str, nullable=False,
-                            default=user.password)
+        parser.add_argument('password', type=str, nullable=False)
         parser.add_argument('first_name', type=str, default=user.first_name)
         parser.add_argument('last_name', type=str, default=user.last_name)
         if admin_role:
@@ -141,7 +140,9 @@ class UserRest(Resource):
         if (user.name != parsed_values['name']
            and self.get_first_by_name(parsed_values['name'])):
             return self.status_user_409()
-        if 'password' in parsed_values:
+        if parsed_values['password'] is None:
+            parsed_values['password'] = user.password
+        else:
             parsed_values['password'] = hash_string(parsed_values['password'])
 
         self.User.query.filter_by(id=id).update(parsed_values)
