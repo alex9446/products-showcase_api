@@ -60,6 +60,21 @@ class Test(unittest.TestCase):
                                   headers=headers, json=json)
         return response
 
+    @staticmethod
+    def get_user(token: str, user_id: str = None):
+        headers = {'Authorization': 'Bearer ' + token}
+        with app.test_client() as client:
+            response = (client.get('/users/' + user_id, headers=headers)
+                        if user_id else client.get('/users', headers=headers))
+        return response
+
+    @staticmethod
+    def delete_user(token: str, user_id: str):
+        headers = {'Authorization': 'Bearer ' + token}
+        with app.test_client() as client:
+            response = client.delete('/users/' + user_id, headers=headers)
+        return response
+
     def check_response(self, response, status_code: int, status: str):
         self.assertEqual(response.status_code, status_code)
         self.assertEqual(response.get_json()['status'], status)
@@ -143,6 +158,54 @@ class Test(unittest.TestCase):
         self.add_user(token, {'name': 'existent'})
         response = self.edit_user(token, user_id, {'name': 'existent'})
         self.check_response_error(response, status_code=409)
+
+    def test_get_user(self):
+        token = self.set_login().get_json()['token']
+        new_user = self.add_user(token, {'name': 'get'}).get_json()['user']
+        response = self.get_user(token, new_user['id'])
+        self.check_response_ok(response)
+
+    def test_get_all_users(self):
+        token = self.set_login().get_json()['token']
+        response = self.get_user(token)
+        self.check_response_ok(response)
+
+    def test_get_user_with_lower_role(self):
+        token = self.set_login(name='new').get_json()['token']
+        response = self.get_user(token)
+        self.check_response_error(response, status_code=401)
+
+    def test_get_nonexistent_user(self):
+        token = self.set_login().get_json()['token']
+        response = self.get_user(token, '000000')
+        self.check_response_error(response, status_code=404)
+
+    def test_delete_user(self):
+        token = self.set_login().get_json()['token']
+        new_user = self.add_user(token, {'name': 'delete'}).get_json()['user']
+        response = self.delete_user(token, new_user['id'])
+        self.check_response_ok(response)
+
+    def test_delete_user_with_lower_role(self):
+        token = self.set_login(name='new').get_json()['token']
+        response = self.delete_user(token, '000000')
+        self.check_response_error(response, status_code=401)
+
+    def test_delete_nonexistent_user(self):
+        token = self.set_login().get_json()['token']
+        response = self.delete_user(token, '000000')
+        self.check_response_error(response, status_code=404)
+
+    def test_delete_user_with_same_user(self):
+        token = self.set_login().get_json()['token']
+        password = get_parameter('first_admin_password')
+        new_user = self.add_user(
+            token, {'name': 'delete', 'password': password}
+        ).get_json()['user']
+        new_user_token = self.set_login(name='delete').get_json()['token']
+        print(new_user_token)
+        response = self.delete_user(new_user_token, new_user['id'])
+        self.check_response_ok(response)
 
 
 if __name__ == '__main__':

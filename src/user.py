@@ -79,17 +79,14 @@ class UserRest(Resource):
         return self.status_user_404()
 
     def get(self, id: str = None) -> tuple:
-        admin_role = self.check_allowed_role('admin')
-        if not (admin_role or self.check_allowed_id(id)):
+        if not (self.check_allowed_role('admin') or self.check_allowed_id(id)):
             return status_user_401()
         if id:
             user = self.get_first_by_id(id)
             if user:
                 return status_ok(user=user.to_dict())
             return self.status_user_404()
-        if admin_role:
-            return status_ok(users=model_to_dict(self.User))
-        return status_user_401()
+        return status_ok(users=model_to_dict(self.User))
 
     def post(self, id: str = None) -> tuple:
         if not self.check_allowed_role('admin'):
