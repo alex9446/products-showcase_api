@@ -82,6 +82,30 @@ class Test(unittest.TestCase):
             response = client.delete('/users/' + user_id, headers=headers)
         return response
 
+    @staticmethod
+    def add_product(token: str, json: dict):
+        headers = {'Authorization': 'Bearer ' + token}
+        with app.test_client() as client:
+            response = client.post('/products', headers=headers, json=json)
+        return response
+
+    @staticmethod
+    def edit_product(token: str, product_id: str, json: dict):
+        headers = {'Authorization': 'Bearer ' + token}
+        with app.test_client() as client:
+            response = client.put('/products/' + product_id,
+                                  headers=headers, json=json)
+        return response
+
+    @staticmethod
+    def get_product(token: str, product_id: str = None):
+        headers = {'Authorization': 'Bearer ' + token}
+        with app.test_client() as client:
+            response = (client.get('/products/' + product_id, headers=headers)
+                        if product_id else client.get('/products',
+                                                      headers=headers))
+        return response
+
     def check_response(self, response, status_code: int, status: str):
         self.assertEqual(response.status_code, status_code)
         self.assertEqual(response.get_json()['status'], status)
@@ -212,6 +236,75 @@ class Test(unittest.TestCase):
         new_user_token = self.get_token(name='delete')
         response = self.delete_user(new_user_token, new_user['id'])
         self.check_response_ok(response)
+
+    def test_add_product(self):
+        token = self.get_token()
+        response = self.add_product(token, {'name': 'new', 'sku': 'sku_new'})
+        self.check_response_ok(response)
+
+    def test_add_product_with_lower_role(self):
+        admin_token = self.get_token()
+        password = get_parameter('first_admin_password')
+        response = self.add_user(admin_token,
+                                 {'name': 'product', 'password': password})
+        token = self.get_token(name='product')
+        response = self.add_product(token, {'name': 'new', 'sku': 'sku_new'})
+        self.check_response_error(response, status_code=401)
+
+    def test_add_product_already_existent(self):
+        token = self.get_token()
+        response = self.add_product(token, {'name': 'new', 'sku': 'sku_new'})
+        self.check_response_error(response, status_code=409)
+
+    def test_edit_product(self):
+        token = self.get_token()
+        new_product_id = self.add_product(
+            token, {'name': 'edit', 'sku': 'sku_edit'}
+        ).get_json()['product']['id']
+        response = self.edit_product(token, new_product_id, {'name': 'edit2'})
+        self.check_response_ok(response)
+
+    def test_edit_product_with_lower_role(self):
+        admin_token = self.get_token()
+        password = get_parameter('first_admin_password')
+        response = self.add_user(admin_token,
+                                 {'name': 'product', 'password': password})
+        token = self.get_token(name='product')
+        response = self.edit_product(token, '000000',
+                                     {'name': 'new', 'sku': 'sku_new'})
+        self.check_response_error(response, status_code=401)
+
+    def test_edit_nonexistent_product(self):
+        token = self.get_token()
+        response = self.edit_product(token, '000000', {'name': 'test'})
+        self.check_response_error(response, status_code=404)
+
+    def test_edit_product_already_existent(self):
+        token = self.get_token()
+        new_product_id = self.add_product(
+            token, {'name': 'existent', 'sku': 'sku_existent'}
+        ).get_json()['product']['id']
+        response = self.edit_product(token, new_product_id,
+                                     {'sku': 'sku_new'})
+        self.check_response_error(response, status_code=409)
+
+    def test_get_product(self):
+        token = self.get_token()
+        new_product = self.add_product(
+            token, {'name': 'get', 'sku': 'sku_get'}
+        ).get_json()['product']
+        response = self.get_product(token, new_product['id'])
+        self.check_response_ok(response)
+
+    def test_get_all_products(self):
+        token = self.get_token()
+        response = self.get_product(token)
+        self.check_response_ok(response)
+
+    def test_get_nonexistent_product(self):
+        token = self.get_token()
+        response = self.get_product(token, '000000')
+        self.check_response_error(response, status_code=404)
 
 
 if __name__ == '__main__':
