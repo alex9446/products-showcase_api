@@ -64,7 +64,7 @@ def get_parameter(name: str) -> str:
 
     for arg in args:
         value = parsed_args[arg.replace('-', '_')]
-        if value:
+        if value:  # pragma: no cover
             return value
     for env in envs:
         if env in environment_variables:
