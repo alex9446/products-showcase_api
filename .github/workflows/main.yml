@@ -1,0 +1,25 @@
+name: Pipeline
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+
+jobs:
+  test_python3:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3
+
+    - name: Install dependencies
+      run: |
+        python -V
+        python -m pip install -r requirements-min.txt
+        python -m pip install flake8 coverage
+
+    - name: Test
+      run: sh ./run_test.sh
