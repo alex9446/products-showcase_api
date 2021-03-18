@@ -2,8 +2,9 @@ from datetime import datetime
 
 from flask_restful import Resource, reqparse
 
-from .utils import (check_allowed_role, db_add_and_commit, model_to_dict,
-                    random_hex, status_error, status_ok, status_user_401)
+from .utils import (check_allowed_role, db_add_and_commit,
+                    db_delete_and_commit, model_to_dict, random_hex,
+                    status_error, status_ok, status_user_401)
 
 
 # Define and return Product class model
@@ -50,6 +51,15 @@ class ProductRest(Resource):
 
     def get_first_by_sku(self, sku: str):
         return self.Product.query.filter_by(sku=sku).first()
+
+    def delete(self, id: str = None) -> tuple:
+        if not self.check_allowed_role('manager'):
+            return status_user_401()
+        product = self.get_first_by_id(id)
+        if product:
+            db_delete_and_commit(self.db, product)
+            return status_ok(product=product.to_dict())
+        return self.status_product_404()
 
     def get(self, id: str = None) -> tuple:
         if id:

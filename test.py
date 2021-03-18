@@ -106,6 +106,14 @@ class Test(unittest.TestCase):
                                                       headers=headers))
         return response
 
+    @staticmethod
+    def delete_product(token: str, product_id: str):
+        headers = {'Authorization': 'Bearer ' + token}
+        with app.test_client() as client:
+            response = client.delete('/products/' + product_id,
+                                     headers=headers)
+        return response
+
     def check_response(self, response, status_code: int, status: str):
         self.assertEqual(response.status_code, status_code)
         self.assertEqual(response.get_json()['status'], status)
@@ -304,6 +312,24 @@ class Test(unittest.TestCase):
     def test_get_nonexistent_product(self):
         token = self.get_token()
         response = self.get_product(token, '000000')
+        self.check_response_error(response, status_code=404)
+
+    def test_delete_product(self):
+        token = self.get_token()
+        new_product = self.add_product(
+            token, {'name': 'delete', 'sku': 'sku_delete'}
+        ).get_json()['product']
+        response = self.delete_product(token, new_product['id'])
+        self.check_response_ok(response)
+
+    def test_delete_product_with_lower_role(self):
+        token = self.get_token(name='new')
+        response = self.delete_product(token, '000000')
+        self.check_response_error(response, status_code=401)
+
+    def test_delete_nonexistent_product(self):
+        token = self.get_token()
+        response = self.delete_product(token, '000000')
         self.check_response_error(response, status_code=404)
 
 
