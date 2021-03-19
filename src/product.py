@@ -26,7 +26,7 @@ def get_Product_class(db):
                 'sku': self.sku,
                 'description': self.description,
                 'price': self.price,
-                'discount_percent': self.discount_percent,
+                'discount_percent': self.discount_percent
             }
     return Product
 
