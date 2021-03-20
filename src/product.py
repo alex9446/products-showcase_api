@@ -9,7 +9,7 @@ from .utils import (check_allowed_role, db_add_and_commit,
 
 # Define and return Product class model
 # Function was needed, because db is required in inheritance
-def get_Product_class(db):
+def get_Product_class(db, products_collection_table):
     class Product(db.Model):
         id = db.Column(db.String, primary_key=True, default=random_hex)
         name = db.Column(db.String, nullable=False)
@@ -18,6 +18,11 @@ def get_Product_class(db):
         price = db.Column(db.Float, nullable=True)
         discount_percent = db.Column(db.Float, nullable=True)
         since = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+        collections = db.relationship(
+            'Collection',
+            secondary=products_collection_table,
+            lazy='subquery'
+        )
 
         def to_dict(self) -> dict:
             return {
