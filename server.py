@@ -2,7 +2,7 @@ from flask import Flask
 from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 
-from src.collection import get_Collection_class
+from src.collection import get_Collection_class, get_ProductWithPosition_class
 from src.login import LoginRest
 from src.parameters import get_parameter
 from src.product import ProductRest, get_Product_class
@@ -26,19 +26,9 @@ USER_ROLE = {
 }
 
 User = get_User_class(db, USER_ROLE)
-
-# Define many-to-many relationships table
-products_collection_table = db.Table(
-    'products_collection',
-    db.Column('product_id', db.String,
-              db.ForeignKey('product.id'), primary_key=True),
-    db.Column('collection_id', db.String,
-              db.ForeignKey('collection.id'), primary_key=True),
-    db.Column('position', db.Integer, nullable=False, default=0)
-)
-
-Product = get_Product_class(db, products_collection_table)
-Collection = get_Collection_class(db, products_collection_table)
+Product = get_Product_class(db)
+ProductWithPosition = get_ProductWithPosition_class(db)
+Collection = get_Collection_class(db)
 
 # Commands for initialize the database
 db.create_all()
