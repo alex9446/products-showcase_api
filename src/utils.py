@@ -47,9 +47,14 @@ def hash_string(string: str) -> str:
     return sha256(string.encode('utf-8')).hexdigest()
 
 
+# Get records as a list of dictionaries
+def records_to_dict(records) -> list:
+    return [row.to_dict() for row in records]
+
+
 # Get model as a list of dictionaries
 def model_to_dict(model) -> list:
-    return [row.to_dict() for row in model.query.all()]
+    return records_to_dict(model.query.all())
 
 
 # Generate a random hexadecimal value

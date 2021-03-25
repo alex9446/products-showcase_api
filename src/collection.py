@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from .utils import random_hex
+from .utils import random_hex, records_to_dict
 
 
 # Define many-to-one relationships to product with position
@@ -11,6 +11,14 @@ def get_ProductWithPosition_class(db):
         product = db.relationship('Product')
         collection_id = db.Column(db.String, db.ForeignKey('collection.id'))
         position = db.Column(db.Integer, nullable=False, default=0)
+
+        def to_dict(self) -> dict:
+            return {
+                'id': self.id,
+                # 'product': records_to_dict(self.product),
+                'product': self.product.to_dict(),
+                'position': self.position
+            }
     return ProductWithPosition
 
 
@@ -30,7 +38,8 @@ def get_Collection_class(db):
                 'id': self.id,
                 'name': self.name,
                 'short_description': self.short_description,
-                'description': self.description
+                'description': self.description,
+                'products_positions': records_to_dict(self.products_positions)
             }
     return Collection
 
