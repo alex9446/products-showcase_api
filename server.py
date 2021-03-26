@@ -2,7 +2,6 @@ from flask import Flask
 from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 
-from src.collection import get_Collection_class, get_ProductWithPosition_class
 from src.login import LoginRest
 from src.parameters import get_parameter
 from src.product import ProductRest, get_Product_class
@@ -27,8 +26,6 @@ USER_ROLE = {
 
 User = get_User_class(db, USER_ROLE)
 Product = get_Product_class(db)
-ProductWithPosition = get_ProductWithPosition_class(db)
-Collection = get_Collection_class(db)
 
 # Commands for initialize the database
 db.create_all()
