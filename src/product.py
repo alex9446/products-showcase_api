@@ -17,6 +17,7 @@ def get_Product_class(db):
         description = db.Column(db.String, nullable=False, default='')
         price = db.Column(db.Float, nullable=True)
         discount_percent = db.Column(db.Float, nullable=True)
+        position = db.Column(db.Integer, nullable=False, default=0)
         since = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
         def to_dict(self) -> dict:
@@ -26,7 +27,8 @@ def get_Product_class(db):
                 'sku': self.sku,
                 'description': self.description,
                 'price': self.price,
-                'discount_percent': self.discount_percent
+                'discount_percent': self.discount_percent,
+                'position': self.position
             }
     return Product
 
@@ -80,6 +82,7 @@ class ProductRest(Resource):
                             nullable=False, default='')
         parser.add_argument('price', type=float, default=None)
         parser.add_argument('discount_percent', type=float, default=None)
+        parser.add_argument('position', type=int, default=0)
         parsed_values = parser.parse_args()
 
         if self.get_first_by_sku(parsed_values['sku']):
@@ -105,6 +108,7 @@ class ProductRest(Resource):
         parser.add_argument('price', type=float, default=product.price)
         parser.add_argument('discount_percent', type=float,
                             default=product.discount_percent)
+        parser.add_argument('position', type=int, default=product.position)
         parsed_values = parser.parse_args()
 
         if (product.sku != parsed_values['sku']
