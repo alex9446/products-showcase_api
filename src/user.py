@@ -132,7 +132,8 @@ class UserRest(Resource):
                                 default=user.role)
         parsed_values = parser.parse_args()
 
-        if admin_role and (parsed_values['role'] not in self.user_role):
+        if (('role' in parsed_values) and
+           (parsed_values['role'] not in self.user_role)):
             return self.status_user_400_role()
         if (user.name != parsed_values['name']
            and self.get_first_by_name(parsed_values['name'])):

@@ -92,27 +92,30 @@ class ProductRest(Resource):
         return status_ok(product=product.to_dict())
 
     def put(self, id: str = None) -> tuple:
-        if not self.check_allowed_role('manager'):
+        manager_role = self.check_allowed_role('manager')
+        if not (manager_role or self.check_allowed_role('unscrambler')):
             return status_user_401()
         product = self.get_first_by_id(id)
         if product is None:
             return self.status_product_404()
 
         parser = reqparse.RequestParser()
-        parser.add_argument('name', type=str, nullable=False,
-                            default=product.name)
-        parser.add_argument('sku', type=str, nullable=False,
-                            default=product.sku)
-        parser.add_argument('description', type=str, nullable=False,
-                            default=product.description)
-        parser.add_argument('price', type=float, default=product.price)
-        parser.add_argument('discount_percent', type=float,
-                            default=product.discount_percent)
+        if manager_role:
+            parser.add_argument('name', type=str, nullable=False,
+                                default=product.name)
+            parser.add_argument('sku', type=str, nullable=False,
+                                default=product.sku)
+            parser.add_argument('description', type=str, nullable=False,
+                                default=product.description)
+            parser.add_argument('price', type=float, default=product.price)
+            parser.add_argument('discount_percent', type=float,
+                                default=product.discount_percent)
         parser.add_argument('position', type=int, default=product.position)
         parsed_values = parser.parse_args()
 
-        if (product.sku != parsed_values['sku']
-           and self.get_first_by_sku(parsed_values['sku'])):
+        if (('sku' in parsed_values) and
+           (product.sku != parsed_values['sku']) and
+           self.get_first_by_sku(parsed_values['sku'])):
             return self.status_product_409()
         self.Product.query.filter_by(id=id).update(parsed_values)
         self.db.session.commit()
