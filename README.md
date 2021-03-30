@@ -1,4 +1,7 @@
 # Products Showcase [API]
+[![pipeline status](https://gitlab.com/alex9446/products-showcase_api/badges/dev/pipeline.svg)][jobs]
+[![coverage report](https://gitlab.com/alex9446/products-showcase_api/badges/dev/coverage.svg)][jobs]
+
 Main repository: https://gitlab.com/alex9446/products-showcase_api
 
 dev branch deploy: https://products-showcase.herokuapp.com/products
@@ -19,3 +22,5 @@ python server.py
 # or
 gunicorn wsgi:app --log-file -
 ```
+
+[jobs]: https://gitlab.com/alex9446/products-showcase_api/-/jobs
