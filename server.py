@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 from src.login import LoginRest
 from src.parameters import get_parameter
-from src.product import ProductRest, get_Product_class
+from src.product import ProductRest, get_Product_class, get_ProductImages_class
 from src.user import UserRest, add_first_admin_user, get_User_class
 
 app = Flask(__name__)
@@ -26,6 +26,7 @@ USER_ROLE = {
 
 User = get_User_class(db, USER_ROLE)
 Product = get_Product_class(db)
+get_ProductImages_class(db)
 
 # Commands for initialize the database
 db.create_all()

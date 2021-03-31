@@ -19,6 +19,7 @@ def get_Product_class(db):
         discount_percent = db.Column(db.Float, nullable=True)
         position = db.Column(db.Integer, nullable=False, default=0)
         since = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+        db.relationship('ProductImages', lazy=True)
 
         def to_dict(self) -> dict:
             return {
@@ -31,6 +32,17 @@ def get_Product_class(db):
                 'position': self.position
             }
     return Product
+
+
+# Define and return ProductImages class model
+# Function was needed, because db is required in inheritance
+def get_ProductImages_class(db):
+    class ProductImages(db.Model):
+        product_id = db.Column(db.String, db.ForeignKey('product.id'),
+                               primary_key=True)
+        position = db.Column(db.Integer, primary_key=True)
+        base64_image = db.Column(db.String, nullable=False)
+    return ProductImages
 
 
 # Return Product rest resource
