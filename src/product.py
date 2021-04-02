@@ -4,7 +4,7 @@ from flask_restful import Resource, reqparse
 
 from .utils import (check_allowed_role, db_add_and_commit,
                     db_delete_and_commit, model_to_dict, random_hex,
-                    status_error, status_ok, status_user_401)
+                    records_to_dict, status_error, status_ok, status_user_401)
 
 
 # Define and return Product class model
@@ -19,7 +19,7 @@ def get_Product_class(db):
         discount_percent = db.Column(db.Float, nullable=True)
         position = db.Column(db.Integer, nullable=False, default=0)
         since = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-        db.relationship('ProductImages', lazy=True)
+        images = db.relationship('ProductImages', lazy=True)
 
         def to_dict(self) -> dict:
             return {
@@ -29,7 +29,8 @@ def get_Product_class(db):
                 'description': self.description,
                 'price': self.price,
                 'discount_percent': self.discount_percent,
-                'position': self.position
+                'position': self.position,
+                'images': records_to_dict(self.images)
             }
     return Product
 
@@ -42,15 +43,23 @@ def get_ProductImages_class(db):
                                primary_key=True)
         position = db.Column(db.Integer, primary_key=True)
         base64_image = db.Column(db.String, nullable=False)
+
+        def to_dict(self) -> dict:
+            return {
+                'position': self.position,
+                'base64_image': self.base64_image
+            }
     return ProductImages
 
 
 # Return Product rest resource
 class ProductRest(Resource):
     @classmethod
-    def add_Product(cls, db, Product, jwt_secret: str, user_role: dict):
+    def add_Product(cls, db, Product, ProductImages,
+                    jwt_secret: str, user_role: dict):
         cls.db = db
         cls.Product = Product
+        cls.ProductImages = ProductImages
         cls.jwt_secret = jwt_secret
         cls.user_role = user_role
         return cls
@@ -95,6 +104,7 @@ class ProductRest(Resource):
         parser.add_argument('price', type=float, default=None)
         parser.add_argument('discount_percent', type=float, default=None)
         parser.add_argument('position', type=int, default=0)
+        parser.add_argument('images', type=list, default=[])
         parsed_values = parser.parse_args()
 
         if self.get_first_by_sku(parsed_values['sku']):
@@ -123,6 +133,7 @@ class ProductRest(Resource):
             parser.add_argument('discount_percent', type=float,
                                 default=product.discount_percent)
         parser.add_argument('position', type=int, default=product.position)
+        parser.add_argument('images', type=list, default=[])
         parsed_values = parser.parse_args()
 
         if (('sku' in parsed_values) and
