@@ -19,7 +19,8 @@ def get_Product_class(db):
         discount_percent = db.Column(db.Float, nullable=True)
         position = db.Column(db.Integer, nullable=False, default=0)
         since = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-        images = db.relationship('ProductImages', lazy=True)
+        images = db.relationship('ProductImages', lazy=True,
+                                 cascade='all, delete, delete-orphan')
 
         def to_dict(self) -> dict:
             return {
@@ -104,12 +105,14 @@ class ProductRest(Resource):
         parser.add_argument('price', type=float, default=None)
         parser.add_argument('discount_percent', type=float, default=None)
         parser.add_argument('position', type=int, default=0)
-        parser.add_argument('images', type=list, default=[])
+        parser.add_argument('images', type=list, default=[], location='json')
         parsed_values = parser.parse_args()
 
         if self.get_first_by_sku(parsed_values['sku']):
             return self.status_product_409()
+        product_images = parsed_values.pop('images')
         product = self.Product(**parsed_values)
+        self.manage_images(product_images, product, self.ProductImages)
         db_add_and_commit(self.db, product)
         return status_ok(product=product.to_dict())
 
@@ -133,16 +136,33 @@ class ProductRest(Resource):
             parser.add_argument('discount_percent', type=float,
                                 default=product.discount_percent)
         parser.add_argument('position', type=int, default=product.position)
-        parser.add_argument('images', type=list, default=[])
+        parser.add_argument('images', type=list, default=[], location='json')
         parsed_values = parser.parse_args()
 
         if (('sku' in parsed_values) and
            (product.sku != parsed_values['sku']) and
            self.get_first_by_sku(parsed_values['sku'])):
             return self.status_product_409()
+        product_images = parsed_values.pop('images')
         self.Product.query.filter_by(id=id).update(parsed_values)
+        self.manage_images(product_images, product, self.ProductImages)
         self.db.session.commit()
         return status_ok(product=product.to_dict())
+
+    @staticmethod
+    def manage_images(images: list, product, ProductImages) -> None:
+        for image_dict in images:
+            position = image_dict['position']
+            b64 = image_dict['base64_image']
+            image = ProductImages.query.filter_by(product_id=product.id,
+                                                  position=position).first()
+            if (b64 is None) and (image is not None):
+                product.images.remove(image)
+            elif b64 is not None:
+                if image is None:
+                    image = ProductImages(position=position)
+                    product.images.append(image)
+                image.base64_image = b64
 
     @staticmethod
     def status_product_404() -> tuple:

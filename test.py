@@ -332,6 +332,26 @@ class Test(unittest.TestCase):
         response = self.delete_product(token, '000000')
         self.check_response_error(response, status_code=404)
 
+    def test_add_product_image(self):
+        token = self.get_token()
+        images = [{'position': 0, 'base64_image': 'test'}]
+        response = self.add_product(token, {'name': 'img', 'sku': 'img_add',
+                                            'images': images})
+        self.check_response_ok(response)
+
+    def test_edit_and_delete_product_image(self):
+        token = self.get_token()
+        images = [{'position': 0, 'base64_image': 'test'}]
+        new_product = self.add_product(token, {'name': 'img', 'sku': 'img_del',
+                                               'images': images})
+        product_id = new_product.get_json()['product']['id']
+        new_image = [{'position': 0, 'base64_image': 'test2'}]
+        response = self.edit_product(token, product_id, {'images': new_image})
+        self.check_response_ok(response)
+        none_image = [{'position': 0, 'base64_image': None}]
+        response = self.edit_product(token, product_id, {'images': none_image})
+        self.check_response_ok(response)
+
 
 if __name__ == '__main__':
     unittest.main()
