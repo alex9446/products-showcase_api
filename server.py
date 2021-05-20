@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect
 from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 
@@ -6,6 +6,7 @@ from src.login import LoginRest
 from src.parameters import get_parameter
 from src.product import ProductRest, get_Product_class, get_ProductImages_class
 from src.user import UserRest, add_first_admin_user, get_User_class
+from src.utils import status_error
 
 app = Flask(__name__)
 
@@ -33,6 +34,18 @@ db.create_all()
 add_first_admin_user(db, User, get_parameter('first_admin_password'))
 
 jwt_secret = get_parameter('jwt_secret')
+
+
+@app.route('/')
+def index() -> tuple:
+    return redirect(get_parameter('redirect_url'), code=301)
+
+
+# Return error 404 as JSON
+@app.errorhandler(404)
+def page_not_found(e) -> tuple:
+    return status_error(error_code=404, message='Page not found!')
+
 
 api.add_resource(LoginRest.add_User(User, jwt_secret),
                  '/login')
