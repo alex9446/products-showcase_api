@@ -1,4 +1,5 @@
 from flask import Flask, redirect
+from flask_cors import CORS
 from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 
@@ -47,6 +48,16 @@ def page_not_found(e) -> tuple:
     return status_error(error_code=404, message='Page not found!')
 
 
+# Declaration of the allowed cors requests
+allowed_cors = get_parameter('allowed_cors')
+if allowed_cors:
+    CORS(app, resources={
+        r'^\/(login|users|products).+': {
+            'origins': allowed_cors
+        }
+    })
+
+# Declaration of the REST endpoints
 api.add_resource(LoginRest.add_User(User, jwt_secret),
                  '/login')
 api.add_resource(UserRest.add_User(db, User, jwt_secret, USER_ROLE),
