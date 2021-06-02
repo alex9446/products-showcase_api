@@ -52,7 +52,7 @@ def page_not_found(e) -> tuple:
 allowed_cors = get_parameter('allowed_cors')
 if allowed_cors:
     CORS(app, resources={
-        r'^\/(login|users|products).+': {
+        r'^\/(login|users|products).*': {
             'origins': allowed_cors
         }
     })
